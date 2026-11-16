@@ -9,6 +9,7 @@ const Runtime = () => import('@/views/runtime/index.vue')
 const Rerun = () => import('@/views/rerun/index.vue')
 const Baseline = () => import('@/views/baseline/index.vue')
 const Partitioncheck = () => import('@/views/partitioncheck/index.vue')
+const Partitionmark = () => import('@/views/partitionmark/index.vue')
 const Comparator = () => import('@/views/comparator/index.vue')
 const Metastore = () => import('@/views/metastore/index.vue')
 const Resource = () => import('@/views/resource/index.vue')
@@ -31,6 +32,7 @@ const router = createRouter({
     { path: '/rerun', name: 'rerun', component: Rerun },
     { path: '/baseline', name: 'baseline', component: Baseline },
     { path: '/partitioncheck', name: 'partitioncheck', component: Partitioncheck },
+    { path: '/partitionmark', name: 'partitionmark', component: Partitionmark },
     { path: '/comparator', name: 'comparator', component: Comparator },
     { path: '/metastore', name: 'metastore', component: Metastore },
     { path: '/resource', name: 'resource', component: Resource },

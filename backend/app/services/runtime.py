@@ -1,8 +1,14 @@
-"""运行实例业务规则：状态流转、字段校验与筛选口径都收在这里。"""
+"""运行实例业务规则：状态流转、字段流转，以及读取缺失分区记录后的补齐判定。
+
+跨模块的补跑/补齐判断不在本模块重写规则，统一委托
+partition_detection.PartitionDetectionService：运行实例先读取缺失分区数据记录，
+再由同一流程依据有效规则版本给出结论，并写成一份可回查的补齐任务记录。
+"""
 from __future__ import annotations
 
 from typing import Any
 
+from app.services.partition_detection import detection_service
 from app.store import store
 
 MODULE = "runtime"
@@ -59,3 +65,24 @@ class RuntimeService:
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
         return entry, f"运行记录已{action}"
+
+    # ----- 缺失分区补齐：先读记录，再由统一流程判定 -----
+
+    def list_missing_partitions(self, **kwargs: Any) -> tuple[list[dict[str, Any]], int]:
+        """运行实例侧读取缺失分区数据记录，口径与分区检测模块完全一致。"""
+        return detection_service.list_missing_partitions(**kwargs)
+
+    def review_fill(self, record_id: int) -> tuple[dict[str, Any] | None, str, bool]:
+        """只判定、不落任务：供业务侧确认补跑结论依据的是哪条记录与哪版规则。"""
+        return detection_service.evaluate_fill(record_id)
+
+    def create_fill_task(
+        self, record_id: int, *, runtime_id: int | None = None
+    ) -> tuple[dict[str, Any] | None, str]:
+        """读取缺失分区记录后才创建补齐任务；暂停规则/容忍窗口/失效版本一律不建。"""
+        if runtime_id is not None and store.find(MODULE, runtime_id) is None:
+            return None, f"运行实例 {runtime_id} 不存在或已归档，无法关联补齐任务"
+        return detection_service.create_fill_task(record_id, runtime_id=runtime_id)
+
+    def list_fill_tasks(self, **kwargs: Any) -> tuple[list[dict[str, Any]], int]:
+        return detection_service.list_fill_tasks(**kwargs)
